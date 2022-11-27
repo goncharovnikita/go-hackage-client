@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -45,4 +46,27 @@ func (c *packageGetter) GetPackageVersions(
 	}
 
 	return r, nil
+}
+
+func (c *packageGetter) GetPackageCabalReader(
+	ctx context.Context,
+	name string,
+	version string,
+) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s/package/%s-%s/%s.cabal", c.baseURL, name, version, name)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("non-ok response: %s", res.Status)
+	}
+
+	return res.Body, nil
 }
